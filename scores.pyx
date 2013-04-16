@@ -1,6 +1,8 @@
 ##
 ## MISO scoring functions in Cython for MCMC sampler
 ##
+import scipy
+from scipy.misc import logsumexp
 import numpy as np
 cimport numpy as cnp
 
@@ -18,7 +20,60 @@ ctypedef cnp.int_t DTYPE_t
 ###
 ### Variants of sample_reassignments
 ###
+# def sample_reassignments(reads, psi_vector, gene):
+#     """
+#     Sample a reassignments of reads to isoforms.
+#     Note that this does not dependent on the read's current assignment since
+#     we're already considering the possibility of 'reassigning' the read to
+#     its current assignment in the probability calculations.
+#     """
+#     reassignment_probs = []
+#     all_assignments = transpose(tile(arange(self.num_isoforms, dtype=int32),
+#                                      [self.num_reads, 1]))
+#     for assignment in all_assignments:
+#         # Single-end
+#         # Score reads given their assignment
+#         read_probs = log_score_reads(reads, assignment, gene)
+#         # Score the assignments of reads given Psi vector
+#         assignment_probs = \
+#             log_score_assignment(assignment, psi_vector)
+#         reassignment_p = read_probs + assignment_probs
+#         reassignment_probs.append(reassignment_p)
+#     reassignment_probs = transpose(array(reassignment_probs))
+#     m = transpose(vect_logsumexp(reassignment_probs, axis=1)[newaxis,:])
+#     norm_reassignment_probs = exp(reassignment_probs - m)
 
+#     rvsunif = random.rand(self.num_reads, 1)
+#     yrvs = (rvsunif<cumsum(norm_reassignment_probs,axis=1)).argmax(1)[:,newaxis]
+#     ### Note taking first element of transpose(yrvs)!  To avoid a list of assignments
+#     return transpose(yrvs)[0]    
+
+
+###
+### Variants of log_score_assignments
+###
+def log_score_assignment(isoform_nums, psi_vector, scaled_lens, num_reads):
+    """
+    Score an assignment of a set of reads given psi
+    and a gene (i.e. a set of isoforms).
+    """
+    psi_frag = log(psi_vector) + log(scaled_lens)
+    psi_frag = psi_frag - logsumexp(psi_frag)
+    psi_frags = tile(psi_frag, [num_reads, 1])
+    # NEW VERSION: uses xrange
+    return psi_frags[np.arange(num_reads), isoform_nums]
+
+
+def log_score_assignment(isoform_nums, psi_vector, scaled_lens, num_reads):
+    """
+    Score an assignment of a set of reads given psi
+    and a gene (i.e. a set of isoforms).
+    """
+    psi_frag = log(psi_vector) + log(scaled_lens)
+    psi_frag = psi_frag - logsumexp(psi_frag)
+    psi_frags = tile(psi_frag, [num_reads, 1])
+    # NEW VERSION: uses xrange
+    return psi_frags[np.arange(num_reads), isoform_nums]
 
 
 

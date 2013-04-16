@@ -6,26 +6,27 @@ import numpy as np
 
 import scores
 
+num_inc = 3245
+num_exc = 22
+num_com = 39874
+reads = [[1,0]] * num_inc + \
+        [[0,1]] * num_exc + \
+        [[1,1]] * num_com
+reads = np.array(reads)
+isoform_nums = []
+read_len = 40
+overhang_len = 4
+num_parts_per_isoform = np.array([3, 2], dtype=int)
+iso_lens = np.array([1253, 1172], dtype=int)
+# Assignment of reads to isoforms: assign half of
+# the common reads to isoform 0, half to isoform 1
+isoform_nums = [0]*3245 + [1]*22 + [0]*19937 + [1]*19937
+isoform_nums = np.array(isoform_nums, dtype=int)
+num_reads = len(reads)
+num_calls = 1000
+
 def profile_log_score_reads():
     t1 = time.time()
-    num_inc = 3245
-    num_exc = 22
-    num_com = 39874
-    reads = [[1,0]] * num_inc + \
-            [[0,1]] * num_exc + \
-            [[1,1]] * num_com
-    reads = np.array(reads)
-    isoform_nums = []
-    read_len = 40
-    overhang_len = 4
-    num_parts_per_isoform = np.array([3, 2], dtype=int)
-    iso_lens = np.array([1253, 1172], dtype=int)
-    # Assignment of reads to isoforms: assign half of
-    # the common reads to isoform 0, half to isoform 1
-    isoform_nums = [0]*3245 + [1]*22 + [0]*19937 + [1]*19937
-    isoform_nums = np.array(isoform_nums, dtype=int)
-    num_reads = len(reads)
-    num_calls = 1000
     print "Profiling log_score_reads for %d calls..." %(num_calls)
     t1 = time.time()
     for n in xrange(num_calls):
@@ -122,9 +123,28 @@ def py_log_score_reads(reads,
     return log_prob_reads
     
 
+def log_score_assignment(isoform_nums, psi_vector, scaled_lens, num_reads):
+    """
+    Score an assignment of a set of reads given psi
+    and a gene (i.e. a set of isoforms).
+    """
+    psi_frag = log(psi_vector) + log(scaled_lens)
+    psi_frag = psi_frag - logsumexp(psi_frag)
+    psi_frags = tile(psi_frag, [num_reads, 1])
+    return psi_frags[np.arange(num_reads), isoform_nums]
+
+
+def profile_log_score_assignments()
+    psi_vector = np.array([0.5, 0.5])
+    scaled_lens = iso_lens - read_len + 1
+    num_calls = 1000
+    for n in range(num_calls):
+        log_score_assignments(isoform_nums, psi_vector, scaled_lens, num_reads)
+
 
 def main():
-    profile_log_score_reads()
+    #profile_log_score_reads()
+    profile_log_score_assignments()
 
 if __name__ == "__main__":
     main()

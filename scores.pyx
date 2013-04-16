@@ -2,7 +2,7 @@
 ## MISO scoring functions in Cython for MCMC sampler
 ##
 import scipy
-from scipy.misc import logsumexp
+import scipy.misc
 import numpy as np
 cimport numpy as cnp
 
@@ -52,27 +52,20 @@ ctypedef cnp.int_t DTYPE_t
 ###
 ### Variants of log_score_assignments
 ###
-def log_score_assignment(isoform_nums, psi_vector, scaled_lens, num_reads):
+@cython.boundscheck(False)
+def log_score_assignments(cnp.ndarray[DTYPE_t, ndim=1] isoform_nums,
+                          cnp.ndarray[double, ndim=1] psi_vector,
+                          cnp.ndarray[long, ndim=1] scaled_lens,
+                          DTYPE_t num_reads):
     """
     Score an assignment of a set of reads given psi
     and a gene (i.e. a set of isoforms).
     """
-    psi_frag = log(psi_vector) + log(scaled_lens)
-    psi_frag = psi_frag - logsumexp(psi_frag)
-    psi_frags = tile(psi_frag, [num_reads, 1])
-    # NEW VERSION: uses xrange
-    return psi_frags[np.arange(num_reads), isoform_nums]
-
-
-def log_score_assignment(isoform_nums, psi_vector, scaled_lens, num_reads):
-    """
-    Score an assignment of a set of reads given psi
-    and a gene (i.e. a set of isoforms).
-    """
-    psi_frag = log(psi_vector) + log(scaled_lens)
-    psi_frag = psi_frag - logsumexp(psi_frag)
-    psi_frags = tile(psi_frag, [num_reads, 1])
-    # NEW VERSION: uses xrange
+    cdef:
+       cnp.ndarray[double, ndim=1] psi_frag
+    psi_frag = np.log(psi_vector) + np.log(scaled_lens)
+    psi_frag = psi_frag - scipy.misc.logsumexp(psi_frag)
+    psi_frags = np.tile(psi_frag, [num_reads, 1])
     return psi_frags[np.arange(num_reads), isoform_nums]
 
 
@@ -80,20 +73,21 @@ def log_score_assignment(isoform_nums, psi_vector, scaled_lens, num_reads):
 ###
 ### Variants of log_score_reads
 ###
+@cython.boundscheck(False)
 def log_score_reads(cnp.ndarray[DTYPE_t, ndim=2] reads,
                     cnp.ndarray[DTYPE_t, ndim=1] isoform_nums,
                     cnp.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,
                     cnp.ndarray[DTYPE_t, ndim=1] iso_lens,
-                    int read_len,
-                    int overhang_len,
-                    int num_reads):
+                    DTYPE_t read_len,
+                    DTYPE_t overhang_len,
+                    DTYPE_t num_reads):
     """
     Score a set of reads given their isoform assignments.
     """
     cdef:
        cnp.ndarray[double, ndim=1] log_prob_reads
        cnp.ndarray[long, ndim=1] overhang_excluded
-       cnp.ndarray[long, ndim=1] zero_prob_indx
+       #cnp.ndarray[long, ndim=1] zero_prob_indx
        cnp.ndarray[long, ndim=1] num_reads_possible
     # The probability of a read being assigned to an isoform that
     # could not have generated it (i.e. where the read is not a
@@ -112,6 +106,7 @@ def log_score_reads(cnp.ndarray[DTYPE_t, ndim=2] reads,
     return log_prob_reads
 
 
+@cython.boundscheck(False)
 def multiply_log_score_reads(cnp.ndarray[DTYPE_t, ndim=2] reads,
                              cnp.ndarray[DTYPE_t, ndim=1] isoform_nums,
                              cnp.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,

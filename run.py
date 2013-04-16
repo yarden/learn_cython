@@ -4,6 +4,9 @@ import time
 
 import numpy as np
 
+import scipy
+import scipy.misc 
+
 import scores
 
 num_inc = 3245
@@ -123,27 +126,37 @@ def py_log_score_reads(reads,
     return log_prob_reads
     
 
-def log_score_assignment(isoform_nums, psi_vector, scaled_lens, num_reads):
+def log_score_assignments(isoform_nums, psi_vector, scaled_lens, num_reads):
     """
     Score an assignment of a set of reads given psi
     and a gene (i.e. a set of isoforms).
     """
-    psi_frag = log(psi_vector) + log(scaled_lens)
-    psi_frag = psi_frag - logsumexp(psi_frag)
-    psi_frags = tile(psi_frag, [num_reads, 1])
+    psi_frag = np.log(psi_vector) + np.log(scaled_lens)
+    psi_frag = psi_frag - scipy.misc.logsumexp(psi_frag)
+    psi_frags = np.tile(psi_frag, [num_reads, 1])
     return psi_frags[np.arange(num_reads), isoform_nums]
 
 
-def profile_log_score_assignments()
+def profile_log_score_assignments():
     psi_vector = np.array([0.5, 0.5])
     scaled_lens = iso_lens - read_len + 1
     num_calls = 1000
+    print "Profiling log score assignments in PYTHON..."
+    t1 = time.time()
     for n in range(num_calls):
         log_score_assignments(isoform_nums, psi_vector, scaled_lens, num_reads)
+    t2 = time.time()
+    print "Took %.2f seconds" %(t2 - t1)
+    print "Profiling log score assignments in cython..."
+    t1 = time.time()
+    for n in range(num_calls):
+        scores.log_score_assignments(isoform_nums, psi_vector, scaled_lens, num_reads)
+    t2 = time.time()
+    print "Took %.2f seconds" %(t2 - t1)
 
 
 def main():
-    #profile_log_score_reads()
+    profile_log_score_reads()
     profile_log_score_assignments()
 
 if __name__ == "__main__":

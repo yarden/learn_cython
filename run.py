@@ -25,7 +25,7 @@ def profile_log_score_reads():
     isoform_nums = [0]*3245 + [1]*22 + [0]*19937 + [1]*19937
     isoform_nums = np.array(isoform_nums, dtype=int)
     num_reads = len(reads)
-    num_calls = 5000
+    num_calls = 1000
     print "Profiling log_score_reads for %d calls..." %(num_calls)
     t1 = time.time()
     for n in xrange(num_calls):
@@ -39,6 +39,47 @@ def profile_log_score_reads():
     t2 = time.time()
     print "log_score_reads took %.2f seconds per %d calls." %(t2 - t1,
                                                               num_calls)
+    # --
+    print "Profiling multiply_log_score_reads for %d calls..." %(num_calls)
+    t1 = time.time()
+    for n in xrange(num_calls):
+        scores.multiply_log_score_reads(reads,
+                                        isoform_nums,
+                                        num_parts_per_isoform,
+                                        iso_lens,
+                                        read_len,
+                                        overhang_len,
+                                        num_reads)
+    t2 = time.time()
+    print "MULTIPLY log_score_reads took %.2f seconds per %d calls." %(t2 - t1,
+                                                                       num_calls)
+    
+    print "Profiling OUTER version..."
+    t1 = time.time()
+    scores.outer_log_score_reads(num_calls,
+                                 reads,
+                                 isoform_nums,
+                                 num_parts_per_isoform,
+                                 iso_lens,
+                                 read_len,
+                                 overhang_len,
+                                 num_reads)
+    t2 = time.time()
+    print "OUTER version took %.2f seconds" %(t2 - t1)
+    #t1 = time.time()
+    #for n in xrange(num_calls):
+    #    scores.loop_log_score_reads(reads,
+    #                                isoform_nums,
+    #                                num_parts_per_isoform,
+    #                                iso_lens,
+    #                                read_len,
+    #                                overhang_len,
+    #                                num_reads)
+    #t2 = time.time()
+    #print "PYTHON log_score_reads took %.2f seconds per %d calls." %(t2 - t1,
+    #                                                          num_calls)
+    return
+    
     print "Profiling pure PYTHON version..."
     t1 = time.time()
     for n in xrange(num_calls):

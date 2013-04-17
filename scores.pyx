@@ -193,9 +193,9 @@ cdef inner_log_score_reads(np.ndarray[DTYPE_t, ndim=2] reads,
     log_prob_reads[zero_prob_indx] = -1 * np.inf
     return log_prob_reads
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.nonecheck(False)
+#@cython.boundscheck(False)
+#@cython.wraparound(False)
+#@cython.nonecheck(False)
 def loop_log_score_reads(np.ndarray[DTYPE_t, ndim=2] reads,
                          np.ndarray[DTYPE_t, ndim=1] isoform_nums,
                          np.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,

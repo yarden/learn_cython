@@ -4,17 +4,20 @@
 import scipy
 import scipy.misc
 import numpy as np
-cimport numpy as cnp
+cimport numpy as np
 
-cnp.import_array()
+np.import_array()
 
 cimport cython
+
+from libc.math cimport log
 
 #DTYPE = np.int
 # "ctypedef" assigns a corresponding compile-time type to DTYPE_t. For
 # every type in the numpy module there's a corresponding compile-time
 # type with a _t-suffix.
-ctypedef cnp.int_t DTYPE_t
+ctypedef np.int_t DTYPE_t
+ctypedef np.float_t DTYPE_float_t
 
 
 ###
@@ -53,16 +56,17 @@ ctypedef cnp.int_t DTYPE_t
 ### Variants of log_score_assignments
 ###
 @cython.boundscheck(False)
-def log_score_assignments(cnp.ndarray[DTYPE_t, ndim=1] isoform_nums,
-                          cnp.ndarray[double, ndim=1] psi_vector,
-                          cnp.ndarray[long, ndim=1] scaled_lens,
+def log_score_assignments(np.ndarray[DTYPE_t, ndim=1] isoform_nums,
+                          np.ndarray[DTYPE_float_t, ndim=1] psi_vector,
+                          np.ndarray[long, ndim=1] scaled_lens,
                           DTYPE_t num_reads):
     """
     Score an assignment of a set of reads given psi
     and a gene (i.e. a set of isoforms).
     """
     cdef:
-       cnp.ndarray[double, ndim=1] psi_frag
+       np.ndarray[double, ndim=1] psi_frag
+       np.ndarray[double, ndim=2] psi_frags
     psi_frag = np.log(psi_vector) + np.log(scaled_lens)
     psi_frag = psi_frag - scipy.misc.logsumexp(psi_frag)
     psi_frags = np.tile(psi_frag, [num_reads, 1])
@@ -74,10 +78,10 @@ def log_score_assignments(cnp.ndarray[DTYPE_t, ndim=1] isoform_nums,
 ### Variants of log_score_reads
 ###
 @cython.boundscheck(False)
-def log_score_reads(cnp.ndarray[DTYPE_t, ndim=2] reads,
-                    cnp.ndarray[DTYPE_t, ndim=1] isoform_nums,
-                    cnp.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,
-                    cnp.ndarray[DTYPE_t, ndim=1] iso_lens,
+def log_score_reads(np.ndarray[DTYPE_t, ndim=2] reads,
+                    np.ndarray[DTYPE_t, ndim=1] isoform_nums,
+                    np.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,
+                    np.ndarray[DTYPE_t, ndim=1] iso_lens,
                     DTYPE_t read_len,
                     DTYPE_t overhang_len,
                     DTYPE_t num_reads):
@@ -85,10 +89,11 @@ def log_score_reads(cnp.ndarray[DTYPE_t, ndim=2] reads,
     Score a set of reads given their isoform assignments.
     """
     cdef:
-       cnp.ndarray[double, ndim=1] log_prob_reads
-       cnp.ndarray[long, ndim=1] overhang_excluded
-       #cnp.ndarray[long, ndim=1] zero_prob_indx
-       cnp.ndarray[long, ndim=1] num_reads_possible
+       np.ndarray[double, ndim=1] log_prob_reads
+       np.ndarray[long, ndim=1] overhang_excluded
+       np.ndarray[long, ndim=1] zero_prob_indx
+       np.ndarray[long, ndim=1] num_reads_possible
+       double log_one = log(1)
     # The probability of a read being assigned to an isoform that
     # could not have generated it (i.e. where the read is not a
     # substring of the isoform) is zero.  Check for consistency
@@ -99,18 +104,18 @@ def log_score_reads(cnp.ndarray[DTYPE_t, ndim=2] reads,
     # that are ruled out due to overhang constraints.
     num_reads_possible = \
         (iso_lens[isoform_nums] - read_len + 1) - overhang_excluded
-    log_prob_reads = np.log(1) - np.log(num_reads_possible)
+    log_prob_reads = log_one - np.log(num_reads_possible)
     zero_prob_indx = np.nonzero(reads[np.arange(num_reads), isoform_nums] == 0)[0]
     # Assign probability 0 to reads inconsistent with assignment
-    log_prob_reads[zero_prob_indx] = -1 * np.inf
+    log_prob_reads[zero_prob_indx] = -1# * np.inf
     return log_prob_reads
 
 
 @cython.boundscheck(False)
-def multiply_log_score_reads(cnp.ndarray[DTYPE_t, ndim=2] reads,
-                             cnp.ndarray[DTYPE_t, ndim=1] isoform_nums,
-                             cnp.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,
-                             cnp.ndarray[DTYPE_t, ndim=1] iso_lens,
+def multiply_log_score_reads(np.ndarray[DTYPE_t, ndim=2] reads,
+                             np.ndarray[DTYPE_t, ndim=1] isoform_nums,
+                             np.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,
+                             np.ndarray[DTYPE_t, ndim=1] iso_lens,
                              int read_len,
                              int overhang_len,
                              int num_reads):
@@ -118,9 +123,9 @@ def multiply_log_score_reads(cnp.ndarray[DTYPE_t, ndim=2] reads,
     Score a set of reads given their isoform assignments.
     """
     cdef:
-       cnp.ndarray[double, ndim=1] log_prob_reads
-       cnp.ndarray[long, ndim=1] overhang_excluded
-       cnp.ndarray[long, ndim=1] num_reads_possible
+       np.ndarray[double, ndim=1] log_prob_reads
+       np.ndarray[long, ndim=1] overhang_excluded
+       np.ndarray[long, ndim=1] num_reads_possible
     # The probability of a read being assigned to an isoform that
     # could not have generated it (i.e. where the read is not a
     # substring of the isoform) is zero.  Check for consistency
@@ -140,10 +145,10 @@ def multiply_log_score_reads(cnp.ndarray[DTYPE_t, ndim=2] reads,
 
 
 def outer_log_score_reads(int num_calls,
-                          cnp.ndarray[DTYPE_t, ndim=2] reads,
-                          cnp.ndarray[DTYPE_t, ndim=1] isoform_nums,
-                          cnp.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,
-                          cnp.ndarray[DTYPE_t, ndim=1] iso_lens,
+                          np.ndarray[DTYPE_t, ndim=2] reads,
+                          np.ndarray[DTYPE_t, ndim=1] isoform_nums,
+                          np.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,
+                          np.ndarray[DTYPE_t, ndim=1] iso_lens,
                           int read_len,
                           int overhang_len,
                           int num_reads):
@@ -157,10 +162,10 @@ def outer_log_score_reads(int num_calls,
                               num_reads)
         
 
-cdef inner_log_score_reads(cnp.ndarray[DTYPE_t, ndim=2] reads,
-                           cnp.ndarray[DTYPE_t, ndim=1] isoform_nums,
-                           cnp.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,
-                           cnp.ndarray[DTYPE_t, ndim=1] iso_lens,
+cdef inner_log_score_reads(np.ndarray[DTYPE_t, ndim=2] reads,
+                           np.ndarray[DTYPE_t, ndim=1] isoform_nums,
+                           np.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,
+                           np.ndarray[DTYPE_t, ndim=1] iso_lens,
                            int read_len,
                            int overhang_len,
                            int num_reads):
@@ -168,10 +173,10 @@ cdef inner_log_score_reads(cnp.ndarray[DTYPE_t, ndim=2] reads,
     Score a set of reads given their isoform assignments.
     """
     cdef:
-       cnp.ndarray[double, ndim=1] log_prob_reads
-       cnp.ndarray[long, ndim=1] overhang_excluded
-       cnp.ndarray[long, ndim=1] zero_prob_indx
-       cnp.ndarray[long, ndim=1] num_reads_possible
+       np.ndarray[double, ndim=1] log_prob_reads
+       np.ndarray[long, ndim=1] overhang_excluded
+       np.ndarray[long, ndim=1] zero_prob_indx
+       np.ndarray[long, ndim=1] num_reads_possible
     # The probability of a read being assigned to an isoform that
     # could not have generated it (i.e. where the read is not a
     # substring of the isoform) is zero.  Check for consistency
@@ -188,27 +193,42 @@ cdef inner_log_score_reads(cnp.ndarray[DTYPE_t, ndim=2] reads,
     log_prob_reads[zero_prob_indx] = -1 * np.inf
     return log_prob_reads
 
-
-def loop_log_score_reads(cnp.ndarray[DTYPE_t, ndim=2] reads,
-                         cnp.ndarray[DTYPE_t, ndim=1] isoform_nums,
-                         cnp.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,
-                         cnp.ndarray[DTYPE_t, ndim=1] iso_lens,
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+def loop_log_score_reads(np.ndarray[DTYPE_t, ndim=2] reads,
+                         np.ndarray[DTYPE_t, ndim=1] isoform_nums,
+                         np.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,
+                         np.ndarray[DTYPE_t, ndim=1] iso_lens,
+                         int num_reads,
                          int read_len,
-                         int overhang_len,
-                         int num_reads):
-    cdef cnp.ndarray[double, ndim=1] log_prob_reads = np.zeros([num_reads])
+                         int overhang_len):
+    cdef np.ndarray[double, ndim=1] log_prob_reads = np.empty(num_reads)
+    # Read counter
     cdef int curr_read = 0
-    cdef int overhang_excluded = 1
-    for iso_num in isoform_nums:
-        # Compute overhang excluded for this read
-        overhang_excluded = \
-            2*(overhang_len - 1) * (num_parts_per_isoform[iso_num] - 1)
-        num_reads_possible = \
-            (iso_lens[iso_num] - read_len + 1) - overhang_excluded
-        # TODO:
-        # check for impossible reads
-        log_prob_reads[curr_read] = np.log(1) - np.log(num_reads_possible)
-        curr_read += 1
+    # Isoform counter
+    cdef int curr_iso_num = 0
+    # Current isoform's length
+    cdef int curr_iso_len = 0
+    # Number of reads possible in current isoform
+    cdef int num_reads_possible = 0
+    # Number of overhang excluded positions
+    cdef int num_overhang_excluded = 0
+    cdef double foo = 0
+    # Constant used in probability calculation
+    cdef double log_one_val = log(1)
+    for curr_read in xrange(num_reads):
+        # For each isoform assignment, score its probability
+        # Get the current isoform's number (0,...,K-1 for K isoforms)
+        curr_iso_num = isoform_nums[curr_read]
+        # Get the isoform's length
+        curr_iso_len = iso_lens[curr_read]
+        # Compute overhang excluded for this isoform
+        num_overhang_excluded = \
+            2*(overhang_len - 1) * (num_parts_per_isoform[curr_iso_num] - 1)
+        log_num_reads_possible = \
+            (curr_iso_len - read_len + 1) - num_overhang_excluded
+        log_prob_reads[curr_read] = log_one_val - log(num_reads_possible)
     return log_prob_reads
 
 

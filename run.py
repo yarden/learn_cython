@@ -43,21 +43,27 @@ def profile_log_score_reads():
     t2 = time.time()
     print "log_score_reads took %.2f seconds per %d calls." %(t2 - t1,
                                                               num_calls)
-    # --
-    print "Profiling multiply_log_score_reads for %d calls..." %(num_calls)
+    print "PROFILING LOOP:"
     t1 = time.time()
+    # Precompute log number of reads possible per isoform
+    # Compute number of overhang excluded positions per isoform
+    overhang_excluded = \
+        2*(overhang_len - 1) * (num_parts_per_isoform - 1)
+    # Actually unclear that this precomputation is cheaper
+    log_num_reads_possible_per_iso = \
+        np.log((iso_lens - read_len + 1) - overhang_excluded)
     for n in xrange(num_calls):
-        scores.multiply_log_score_reads(reads,
-                                        isoform_nums,
-                                        num_parts_per_isoform,
-                                        iso_lens,
-                                        read_len,
-                                        overhang_len,
-                                        num_reads)
+        scores.loop_log_score_reads(reads,
+                                    isoform_nums,
+                                    num_parts_per_isoform,
+                                    iso_lens,
+                                    num_reads,
+                                    read_len,
+                                    overhang_len)
     t2 = time.time()
-    print "MULTIPLY log_score_reads took %.2f seconds per %d calls." %(t2 - t1,
-                                                                       num_calls)
-    
+    print "loop log_score_reads took %.2f seconds per %d calls." %(t2 - t1,
+                                                                   num_calls)
+    return
     print "Profiling OUTER version..."
     t1 = time.time()
     scores.outer_log_score_reads(num_calls,
@@ -157,7 +163,7 @@ def profile_log_score_assignments():
 
 def main():
     profile_log_score_reads()
-    profile_log_score_assignments()
+    #profile_log_score_assignments()
 
 if __name__ == "__main__":
     main()

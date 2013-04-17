@@ -26,14 +26,14 @@ iso_lens = np.array([1253, 1172], dtype=int)
 isoform_nums = [0]*3245 + [1]*22 + [0]*19937 + [1]*19937
 isoform_nums = np.array(isoform_nums, dtype=int)
 num_reads = len(reads)
-num_calls = 1000
+num_calls = 1
 
 def profile_log_score_reads():
     t1 = time.time()
     t1 = time.time()
     print "Profiling log_score_reads for %d calls..." %(num_calls)
     for n in xrange(num_calls):
-        scores.log_score_reads(reads,
+        print scores.log_score_reads(reads,
                                isoform_nums,
                                num_parts_per_isoform,
                                iso_lens,
@@ -46,7 +46,7 @@ def profile_log_score_reads():
     print "PROFILING LOOP:"
     t1 = time.time()
     for n in xrange(num_calls):
-        scores.loop_log_score_reads(reads,
+        print scores.loop_log_score_reads(reads,
                                     isoform_nums,
                                     num_parts_per_isoform,
                                     iso_lens,
@@ -61,9 +61,9 @@ def profile_log_score_reads():
     num_overhang_excluded = \
         2*(overhang_len - 1) * (num_parts_per_isoform[isoform_nums] - 1)
     log_num_reads_possible = \
-        np.log(iso_lens[isoform_nums] - read_len + 1) - num_overhang_excluded
+        np.log((iso_lens[isoform_nums] - read_len + 1) - num_overhang_excluded)
     for n in xrange(num_calls):
-        scores.precomputed_loop_log_score_reads(reads,
+        print scores.precomputed_loop_log_score_reads(reads,
                                                 isoform_nums,
                                                 num_parts_per_isoform,
                                                 iso_lens,

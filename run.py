@@ -32,8 +32,9 @@ def profile_log_score_reads():
     t1 = time.time()
     print "Profiling log_score_reads for %d calls..." %(num_calls)
     t1 = time.time()
+    num_calls = 1
     for n in xrange(num_calls):
-        scores.log_score_reads(reads,
+        print scores.log_score_reads(reads,
                                isoform_nums,
                                num_parts_per_isoform,
                                iso_lens,
@@ -45,15 +46,8 @@ def profile_log_score_reads():
                                                               num_calls)
     print "PROFILING LOOP:"
     t1 = time.time()
-    # Precompute log number of reads possible per isoform
-    # Compute number of overhang excluded positions per isoform
-    overhang_excluded = \
-        2*(overhang_len - 1) * (num_parts_per_isoform - 1)
-    # Actually unclear that this precomputation is cheaper
-    log_num_reads_possible_per_iso = \
-        np.log((iso_lens - read_len + 1) - overhang_excluded)
     for n in xrange(num_calls):
-        scores.loop_log_score_reads(reads,
+        print scores.loop_log_score_reads(reads,
                                     isoform_nums,
                                     num_parts_per_isoform,
                                     iso_lens,

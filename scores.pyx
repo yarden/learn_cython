@@ -228,7 +228,6 @@ def loop_log_score_reads(np.ndarray[DTYPE_t, ndim=2] reads,
         num_reads_possible = \
             (curr_iso_len - read_len + 1) - num_overhang_excluded
         log_prob_reads[curr_read] = log_one_val - log(num_reads_possible)
-    print log_prob_reads
     return log_prob_reads
 
 

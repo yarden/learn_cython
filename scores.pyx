@@ -214,7 +214,6 @@ def loop_log_score_reads(np.ndarray[DTYPE_t, ndim=2] reads,
     cdef int num_reads_possible = 0
     # Number of overhang excluded positions
     cdef int num_overhang_excluded = 0
-    cdef double foo = 0
     # Constant used in probability calculation
     cdef double log_one_val = log(1)
     for curr_read in xrange(num_reads):
@@ -222,13 +221,14 @@ def loop_log_score_reads(np.ndarray[DTYPE_t, ndim=2] reads,
         # Get the current isoform's number (0,...,K-1 for K isoforms)
         curr_iso_num = isoform_nums[curr_read]
         # Get the isoform's length
-        curr_iso_len = iso_lens[curr_read]
+        curr_iso_len = iso_lens[curr_iso_num]
         # Compute overhang excluded for this isoform
         num_overhang_excluded = \
             2*(overhang_len - 1) * (num_parts_per_isoform[curr_iso_num] - 1)
-        log_num_reads_possible = \
+        num_reads_possible = \
             (curr_iso_len - read_len + 1) - num_overhang_excluded
         log_prob_reads[curr_read] = log_one_val - log(num_reads_possible)
+    print log_prob_reads
     return log_prob_reads
 
 

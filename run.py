@@ -30,9 +30,9 @@ num_calls = 1000
 
 def profile_log_score_reads():
     t1 = time.time()
-    print "Profiling log_score_reads for %d calls..." %(num_calls)
     t1 = time.time()
     num_calls = 1
+    print "Profiling log_score_reads for %d calls..." %(num_calls)
     for n in xrange(num_calls):
         print scores.log_score_reads(reads,
                                isoform_nums,

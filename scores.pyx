@@ -231,3 +231,32 @@ def loop_log_score_reads(np.ndarray[DTYPE_t, ndim=2] reads,
     return log_prob_reads
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+def precomputed_loop_log_score_reads(np.ndarray[DTYPE_t, ndim=2] reads,
+                                     np.ndarray[DTYPE_t, ndim=1] isoform_nums,
+                                     np.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,
+                                     np.ndarray[DTYPE_t, ndim=1] iso_lens,
+                                     int num_reads,
+                                     np.ndarray[double, ndim=1] log_num_reads_possible_per_iso):
+    cdef np.ndarray[double, ndim=1] log_prob_reads = np.empty(num_reads)
+    # Read counter
+    cdef int curr_read = 0
+    # Isoform counter
+    cdef int curr_iso_num = 0
+    # Current isoform's length
+    cdef int curr_iso_len = 0
+    # Constant used in probability calculation
+    cdef double log_one_val = log(1)
+    for curr_read in xrange(num_reads):
+        # For each isoform assignment, score its probability
+        # Get the current isoform's number (0,...,K-1 for K isoforms)
+        curr_iso_num = isoform_nums[curr_read]
+        # Get the isoform's length
+        curr_iso_len = iso_lens[curr_iso_num]
+        log_prob_reads[curr_read] = \
+            log_one_val - log_num_reads_possible_per_iso[curr_iso_num]
+    return log_prob_reads
+
+

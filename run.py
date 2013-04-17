@@ -56,6 +56,23 @@ def profile_log_score_reads():
     t2 = time.time()
     print "loop log_score_reads took %.2f seconds per %d calls." %(t2 - t1,
                                                                    num_calls)
+    print "PROFILING LOOP (PRECOMPUTED):"
+    t1 = time.time()
+    num_overhang_excluded = \
+        2*(overhang_len - 1) * (num_parts_per_isoform[isoform_nums] - 1)
+    log_num_reads_possible = \
+        np.log(iso_lens[isoform_nums] - read_len + 1) - num_overhang_excluded
+    for n in xrange(num_calls):
+        scores.precomputed_loop_log_score_reads(reads,
+                                                isoform_nums,
+                                                num_parts_per_isoform,
+                                                iso_lens,
+                                                num_reads,
+                                                log_num_reads_possible)
+    t2 = time.time()
+    print "loop log_score_reads took %.2f seconds per %d calls." %(t2 - t1,
+                                                                   num_calls)
+    
     return
     print "Profiling OUTER version..."
     t1 = time.time()

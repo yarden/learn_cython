@@ -26,10 +26,34 @@ iso_lens = np.array([1253, 1172], dtype=int)
 isoform_nums = [0]*3245 + [1]*22 + [0]*19937 + [1]*19937
 isoform_nums = np.array(isoform_nums, dtype=int)
 num_reads = len(reads)
-num_calls = 1000
+num_calls = 1000000
+
+def profile_sample_reassignments():
+    psi_vector = np.array([0.5, 0.5])
+    test_array = np.array([1,2,3,4], dtype=np.float)
+    print "Profiling numpy cumsum"
+    t1 = time.time()
+    for n in np.arange(num_calls):
+        result = np.cumsum(test_array)
+    t2 = time.time()
+    print "Took %.2f seconds" %(t2 - t1)
+    print "result -> ", result
+    print "Profiling CYTHON cumsum"
+    t1 = time.time()
+    result = None
+    for n in np.arange(num_calls):
+        result = scores.my_cumsum(test_array)
+    t2 = time.time()
+    print "result -> ", result
+    print "CYTHON took %.2f seconds" %(t2 - t1)
+    #scores.sample_reassignments(reads,
+    #                            psi_vector,
+    #                            scaled_lens,
+    #                            num_reads,
+    #                            num_isoforms)
+    sys.exit(0)
 
 def profile_log_score_reads():
-    t1 = time.time()
     t1 = time.time()
     print "Profiling log_score_reads for %d calls..." %(num_calls)
     for n in xrange(num_calls):
@@ -160,20 +184,34 @@ def profile_log_score_assignments():
     print "Profiling log score assignments in PYTHON..."
     t1 = time.time()
     for n in range(num_calls):
-        log_score_assignments(isoform_nums, psi_vector, scaled_lens, num_reads)
+        v1 = log_score_assignments(isoform_nums, psi_vector, scaled_lens, num_reads)
     t2 = time.time()
     print "Took %.2f seconds" %(t2 - t1)
     print "Profiling log score assignments in cython..."
     t1 = time.time()
     for n in range(num_calls):
-        scores.log_score_assignments(isoform_nums, psi_vector, scaled_lens, num_reads)
+        v2 = scores.log_score_assignments(isoform_nums, psi_vector, scaled_lens, num_reads)
     t2 = time.time()
     print "Took %.2f seconds" %(t2 - t1)
+    print "Profiling LOOP log score assignments in cython..."
+    t1 = time.time()
+    # Precompute psi_frag
+    log_psi_frag = np.log(psi_vector) + np.log(scaled_lens)
+    log_psi_frag = log_psi_frag - scipy.misc.logsumexp(log_psi_frag)
+    for n in range(num_calls):
+        v3 = scores.loop_log_score_assignments(isoform_nums, log_psi_frag, num_reads)
+    t2 = time.time()
+    print "LOOP Took %.2f seconds" %(t2 - t1)
+    print "RESULTS"
+    print "-" * 4
+    print v1, v2, v3
+    
 
 
 def main():
-    profile_log_score_reads()
-    #profile_log_score_assignments()
+    profile_sample_reassignments()
+    #profile_log_score_reads()
+    profile_log_score_assignments()
 
 if __name__ == "__main__":
     main()

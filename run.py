@@ -6,6 +6,7 @@ import numpy as np
 
 import scipy
 import scipy.misc 
+from scipy.special import gammaln
 
 import scores
 
@@ -28,6 +29,16 @@ isoform_nums = np.array(isoform_nums, dtype=int)
 num_reads = len(reads)
 num_calls = 1000000
 
+
+def dirichlet_lnpdf(alpha, x):
+    """
+    Substitute for dirichlet_lnpdf of pygsl.
+    """
+    dir_log_pdf = \
+        gammaln(sum(alpha)) - sum(gammaln(alpha)) + np.dot((alpha - 1).T, log(x).T)
+    return dir_log_pdf
+
+
 def profile_sample_reassignments():
     psi_vector = np.array([0.5, 0.5])
     test_array = np.array([1,2,3,4], dtype=np.float)
@@ -46,6 +57,8 @@ def profile_sample_reassignments():
     t2 = time.time()
     print "result -> ", result
     print "CYTHON took %.2f seconds" %(t2 - t1)
+    print scores.dirichlet_log_pdf_raw(2, np.array([1, 1]), np.array([0.5, 0.5]))
+    print dirichlet_ln_pdf(np.array([1, 1]), np.array([0.5, 0.5]))
     #scores.sample_reassignments(reads,
     #                            psi_vector,
     #                            scaled_lens,

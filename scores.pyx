@@ -26,10 +26,7 @@ print INT_MAX
 import sys
 print sys.maxint
 
-cdef float result = rand() / INT_MAX
-cdef int result2 = rand()
-cdef int result3 = rand()
-print "random: ", result % INT_MAX, result2 % INT_MAX
+cdef float MY_MAX_INT = float(10000)
 
 #DTYPE = np.int
 # "ctypedef" assigns a corresponding compile-time type to DTYPE_t. For
@@ -119,31 +116,44 @@ def my_cumsum(np.ndarray[double, ndim=1] input_array):
     return cumsum_array
         
 
-# def sample_from_multinomial(np.ndarray[double, ndim=1] probs):
-#     """
-#     Sample one element from multinomial probabilities vector.
+def sample_from_multinomial(np.ndarray[double, ndim=1] probs,
+                            int N):
+    """
+    Sample one element from multinomial probabilities vector.
 
-#     Assumes that the probabilities sum to 1.
+    Assumes that the probabilities sum to 1.
 
-#     Parameters:
-#     -----------
+    Parameters:
+    -----------
 
-#     probs : array, vector of probabilities
-#     """
-#     cdef int num_elts = probs.shape[0]
-#     # The sample: index into probs
-#     cdef int sample = 0
-#     cdef int curr_elt = 0
-#     cdef double rand_val = rand
-#     # Get cumulative sum of probability vector
-#     cdef np.ndarray[double, ndim=1] cumsum = my_cumsum(probs)
-#     for curr_elt in xrange(num_elts):
-#         # If the current cumulative sum is greater than the
-#         # random number, assign it the index
-#         if my_cumsum[curr_elt] >= rand_val:
-#             sample = curr_elt
-#             break
-#     return sample
+    probs : array, vector of probabilities
+    N : int, number of samples to draw
+    """
+    cdef int num_elts = probs.shape[0]
+    # The samples: indices into probs
+    cdef np.ndarray[double, ndim=1] samples = np.empty(N)
+    # Current random samples
+    cdef int random_sample = 0
+    # Counters over number of samples and number of
+    # elements in probability vector
+    cdef int curr_sample = 0
+    cdef int curr_elt = 0
+    cdef double rand_val# = rand() / MY_MAX_INT
+    # Get cumulative sum of probability vector
+    cdef np.ndarray[double, ndim=1] cumsum = my_cumsum(probs)
+    print "CUM SUM: ", cumsum
+    for curr_sample in xrange(N):
+        # Draw random number
+        rand_val = (rand() % MY_MAX_INT) / MY_MAX_INT
+        for curr_elt in xrange(num_elts):
+            # If the current cumulative sum is greater than the
+            # random number, assign it the index
+            if cumsum[curr_elt] >= rand_val:
+                random_sample = curr_elt
+                break
+        print random_sample
+        samples[curr_sample] = random_sample
+    return samples
         
     
 

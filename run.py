@@ -57,8 +57,10 @@ def profile_sample_reassignments():
     t2 = time.time()
     print "result -> ", result
     print "CYTHON took %.2f seconds" %(t2 - t1)
-    print scores.dirichlet_lnpdf(np.array([1, 1], dtype=float), np.array([0.5, 0.5]))
+    print scores.dirichlet_lnpdf(np.array([1, 1], dtype=np.float), np.array([0.5, 0.5]))
     print dirichlet_lnpdf(np.array([1, 1]), np.array([0.5, 0.5]))
+    print scores.sample_from_multinomial(np.array([0.1, 0.3, 0.6]),
+                                         100)
     #scores.sample_reassignments(reads,
     #                            psi_vector,
     #                            scaled_lens,

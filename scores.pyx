@@ -13,6 +13,10 @@ cimport cython
 from cython_gsl cimport *
 
 from libc.math cimport log
+from libc.stdlib cimport rand
+
+cdef int result = rand()
+print "random: ", result
 
 #DTYPE = np.int
 # "ctypedef" assigns a corresponding compile-time type to DTYPE_t. For
@@ -33,6 +37,17 @@ ctypedef np.float_t DTYPE_float_t
 #    # void gsl_ran_multinomial (const gsl_rng * r, size_t K, unsigned int N, const double p[], unsigned int n[])
 #    gsl_ran_multinomial(r, K, N, <double*> p.data, <unsigned int *> n.data)
 #    return n
+
+def dirichlet_lnpdf(np.ndarray[double, ndim=1] alpha,
+                    np.ndarray[double, ndim=1] vector):
+    """
+    Wrapper for dirichlet log pdf scoring function.
+    """
+    cdef int D = vector.size
+    return dirichlet_log_pdf_raw(D,
+                                 &alpha[0], alpha.strides[0],
+                                 &vector[0], vector.strides[0])
+
 
 @cython.infer_types(True)
 cdef double dirichlet_log_pdf_raw(
@@ -91,15 +106,40 @@ def my_cumsum(np.ndarray[double, ndim=1] input_array):
     return cumsum_array
         
 
-# cdef my_multinomial(np.ndarray[double, ndim=1], unsigned int N):
-#     pass
+# def sample_from_multinomial(np.ndarray[double, ndim=1] probs):
+#     """
+#     Sample one element from multinomial probabilities vector.
+
+#     Assumes that the probabilities sum to 1.
+
+#     Parameters:
+#     -----------
+
+#     probs : array, vector of probabilities
+#     """
+#     cdef int num_elts = probs.shape[0]
+#     # The sample: index into probs
+#     cdef int sample = 0
+#     cdef int curr_elt = 0
+#     cdef double rand_val = rand
+#     # Get cumulative sum of probability vector
+#     cdef np.ndarray[double, ndim=1] cumsum = my_cumsum(probs)
+#     for curr_elt in xrange(num_elts):
+#         # If the current cumulative sum is greater than the
+#         # random number, assign it the index
+#         if my_cumsum[curr_elt] >= rand_val:
+#             sample = curr_elt
+#             break
+#     return sample
+        
+    
 
 
 # cdef sample_multinomial(ndarray[double, ndim=1] p, unsigned int N):
 #     """
 #     Sample from multinomial probabilities vector.  Return
 #     position into array.
-
+    
 #     Parameters:
 #     -----------
 #     p : array, probabilities (must sum to 1)

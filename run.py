@@ -27,7 +27,7 @@ iso_lens = np.array([1253, 1172], dtype=int)
 isoform_nums = [0]*3245 + [1]*22 + [0]*19937 + [1]*19937
 isoform_nums = np.array(isoform_nums, dtype=int)
 num_reads = len(reads)
-num_calls = 1000000
+num_calls = 1000
 
 
 def dirichlet_lnpdf(alpha, x):
@@ -35,7 +35,7 @@ def dirichlet_lnpdf(alpha, x):
     Substitute for dirichlet_lnpdf of pygsl.
     """
     dir_log_pdf = \
-        gammaln(sum(alpha)) - sum(gammaln(alpha)) + np.dot((alpha - 1).T, log(x).T)
+        gammaln(np.sum(alpha)) - sum(gammaln(alpha)) + np.dot((alpha - 1).T, np.log(x).T)
     return dir_log_pdf
 
 
@@ -57,8 +57,8 @@ def profile_sample_reassignments():
     t2 = time.time()
     print "result -> ", result
     print "CYTHON took %.2f seconds" %(t2 - t1)
-    print scores.dirichlet_log_pdf_raw(2, np.array([1, 1]), np.array([0.5, 0.5]))
-    print dirichlet_ln_pdf(np.array([1, 1]), np.array([0.5, 0.5]))
+    print scores.dirichlet_lnpdf(np.array([1, 1], dtype=float), np.array([0.5, 0.5]))
+    print dirichlet_lnpdf(np.array([1, 1]), np.array([0.5, 0.5]))
     #scores.sample_reassignments(reads,
     #                            psi_vector,
     #                            scaled_lens,

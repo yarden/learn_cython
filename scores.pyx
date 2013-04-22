@@ -15,8 +15,21 @@ from cython_gsl cimport *
 from libc.math cimport log
 from libc.stdlib cimport rand
 
-cdef int result = rand()
-print "random: ", result
+
+cdef extern from "limits.h":
+    int INT_MAX
+
+
+print "MAXINT: "
+print INT_MAX
+
+import sys
+print sys.maxint
+
+cdef float result = rand() / INT_MAX
+cdef int result2 = rand()
+cdef int result3 = rand()
+print "random: ", result % INT_MAX, result2 % INT_MAX
 
 #DTYPE = np.int
 # "ctypedef" assigns a corresponding compile-time type to DTYPE_t. For

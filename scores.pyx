@@ -10,9 +10,8 @@ cimport numpy as np
 np.import_array()
 
 cimport cython
-from cython_gsl cimport *
 
-from libc.math cimport log
+from libc.math cimport log, exp
 from libc.stdlib cimport rand
 
 
@@ -199,6 +198,48 @@ def sample_from_multinomial(np.ndarray[double, ndim=1] probs,
 #     """
 #     # Use CythonGSL implementation
 #     return gsl_multinomial(p, N)
+
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+def myfunc(np.ndarray[DTYPE_float_t, ndim=1] A,
+           np.ndarray[np.int_t, ndim=1] B,
+           int N):
+    """
+    Score an assignment of a set of reads given psi
+    and a gene (i.e. a set of isoforms).
+    """
+    cdef np.ndarray[DTYPE_float_t, ndim=1] log_A = \
+      np.empty(N, dtype=float)
+    cdef DTYPE_float_t result = 0.0
+    cdef np.int_t j = 0
+    cdef np.int_t indx
+    for j in xrange(N):
+        indx = B[j]
+        result = A[indx]
+        if result == -1:
+            result = 0
+        log_A[j] = exp(log(result + 1.0) * 3)
+    return log_A
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+def accum_myfunc(np.ndarray[DTYPE_float_t, ndim=1] A,
+                 np.ndarray[np.int_t, ndim=1] B,
+                 int N):
+    cdef np.ndarray[DTYPE_float_t, ndim=1] log_A = \
+      np.empty(N, dtype=float)
+    cdef DTYPE_float_t total_result = 0.0
+    cdef DTYPE_float_t val = 0.0
+    log_A = myfunc(A, B, N)
+    for j in xrange(N):
+        val = log_A[j]
+        total_result += val
+    return total_result
 
 
 ###

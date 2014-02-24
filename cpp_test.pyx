@@ -10,7 +10,6 @@ cdef extern from "Rectangle.h" namespace "shapes":
         void move(int, int)
 
 
-
 cdef class PyRectangle:
     cdef Rectangle *thisptr      # hold a C++ instance which we're wrapping
     def __cinit__(self, int x0, int y0, int x1, int y1):

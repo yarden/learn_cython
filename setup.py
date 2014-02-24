@@ -14,7 +14,8 @@ from Cython.Build import cythonize
 
 ext = Extension(
         "cpp_test",                 # name of extension
-            ["cpp_test.pyx"],           # filename of our Pyrex/Cython source
+            ["cpp_test.pyx",
+             "Rectangle.cpp"],           # filename of our Pyrex/Cython source
                 language="c++",              # this causes Pyrex/Cython to create C++ source
                                 cmdclass = {'build_ext': build_ext}
                                     )

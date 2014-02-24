@@ -19,7 +19,6 @@ from libc.stdlib cimport rand
 cdef extern from "limits.h":
     int INT_MAX
 
-
 print "MAXINT: "
 print INT_MAX
 
@@ -47,6 +46,38 @@ ctypedef np.float_t DTYPE_float_t
 #    # void gsl_ran_multinomial (const gsl_rng * r, size_t K, unsigned int N, const double p[], unsigned int n[])
 #    gsl_ran_multinomial(r, K, N, <double*> p.data, <unsigned int *> n.data)
 #    return n
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+cdef DTYPE_float_t my_logsumexp(np.ndarray[DTYPE_float_t, ndim=1] log_vector,
+                                int vector_len):
+    """
+    Log sum exp.
+
+    Parameters:
+    -----------
+
+    log_vector : array of floats corresponding to log values.
+    vector_len : int, length of vector.
+
+    Returns:
+    --------
+
+    Result of log(sum(exp(log_vector)))
+    """
+    cdef DTYPE_float_t curr_exp_value = 0.0
+    cdef DTYPE_float_t sum_of_exps = 0.0
+    cdef DTYPE_float_t log_sum_of_exps = 0.0
+    cdef int curr_elt = 0
+    for curr_elt in xrange(vector_len):
+        curr_exp_value = exp(log_vector[curr_elt])
+        sum_of_exps += curr_exp_value
+    # Now take log of the sum of exp values
+    log_sum_of_exps = log(sum_of_exps)
+    return log_sum_of_exps
+
 
 def dirichlet_lnpdf(np.ndarray[double, ndim=1] alpha,
                     np.ndarray[double, ndim=1] vector):
@@ -141,7 +172,6 @@ def sample_from_multinomial(np.ndarray[double, ndim=1] probs,
     cdef double rand_val# = rand() / MY_MAX_INT
     # Get cumulative sum of probability vector
     cdef np.ndarray[double, ndim=1] cumsum = my_cumsum(probs)
-    print "CUM SUM: ", cumsum
     for curr_sample in xrange(N):
         # Draw random number
         rand_val = (rand() % MY_MAX_INT) / MY_MAX_INT
@@ -151,7 +181,6 @@ def sample_from_multinomial(np.ndarray[double, ndim=1] probs,
             if cumsum[curr_elt] >= rand_val:
                 random_sample = curr_elt
                 break
-        print random_sample
         samples[curr_sample] = random_sample
     return samples
         
@@ -172,45 +201,62 @@ def sample_from_multinomial(np.ndarray[double, ndim=1] probs,
 #     return gsl_multinomial(p, N)
 
 
-# ###
-# ### Variants of sample_reassignments
-# ###
-# def sample_reassignments(np.ndarray[DTYPE_t, ndim=1] reads,
-#                          np.ndarray[DTYPE_float_t, ndim=1] psi_vector,
-#                          np.ndarray[DTYPE_t, ndim=1] scaled_lens,
-#                          int num_reads,
-#                          int num_isoforms):
-#     """
-#     Sample a reassignments of reads to isoforms.
-#     Note that this does not depend on the read's current assignment since
-#     we're already considering the possibility of 'reassigning' the read to
-#     its current assignment in the probability calculations.
-#     """
-#     # Probabilities of reassigning current read to each of the isoforms
-#     cdef np.ndarray[DTYPE_float_t, ndim=1] reassignment_probs = \
-#         np.empty(num_isoforms)
-#     # New assignment of reads to isoforms
-#     cdef np.ndarray[DTYPE_t, ndim=1] new_assignments = np.empty(num_reads)
-#     cdef DTYPE_float_t read_probs = 0.0
-#     cdef DTYPE_float_t assignment_probs = 0.0
-#     cdef DTYPE_t curr_read_assignment = 0
-#     # For each read, compute the probability of reassigning it to
-#     # all of the isoforms and sample a new reassignment
-#     for curr_read in xrange(num_reads):
-#         # Compute isoform probabilities
-#         for curr_isoform in xrange(num_isoforms):
-#             # Log probabilities of these reads and
-#             # this assignment of reads to isoforms
-#             read_probs = log_score_reads()
-#             asssignment_probs = log_score_assignment()
-#             reassignment_probs[curr_isoform] = \
-#                 read_probs + assignment_probs
-#         # Normalize probabilities
-#         reassignment_probs = my_logsumexp(reassignment_probs)
-#         # Sample new assignment for read
-#         curr_read_assignment = sample_multinomial(reassignment_probs, 1)
-#         new_assignments[curr_read] = curr_read_assignment
-#     return new_assignments
+###
+### Variants of sample_reassignments
+###
+def sample_reassignments(np.ndarray[DTYPE_t, ndim=2] reads,
+                         np.ndarray[DTYPE_float_t, ndim=1] psi_vector,
+                         np.ndarray[DTYPE_t, ndim=1] iso_lens,
+                         np.ndarray[DTYPE_t, ndim=1] scaled_lens,
+                         np.ndarray[DTYPE_t, ndim=1] num_parts_per_isoform,
+                         int num_reads,
+                         int read_len,
+                         int overhang_len):
+    """
+    Sample a reassignments of reads to isoforms.
+    Note that this does not depend on the read's current assignment since
+    we're already considering the possibility of 'reassigning' the read to
+    its current assignment in the probability calculations.
+    """
+    cdef DTYPE_t num_isoforms = psi_vector.shape[0]
+    # Probabilities of reassigning current read to each of the isoforms
+    cdef np.ndarray[DTYPE_float_t, ndim=1] reassignment_probs = \
+        np.empty(num_isoforms)
+    cdef np.ndarray[double, ndim=1] isoform_nums = \
+        np.empty(num_isoforms)
+    # New assignment of reads to isoforms
+    cdef np.ndarray[int, ndim=1] new_assignments = np.empty(num_reads)
+    cdef double read_probs = 0.0
+    cdef DTYPE_float_t assignment_probs = 0.0
+    cdef DTYPE_t curr_read_assignment = 0
+    
+    # For each read, compute the probability of reassigning it to
+    # all of the isoforms and sample a new reassignment
+    for curr_read in xrange(num_reads):
+        # Compute isoform probabilities
+        for curr_isoform in xrange(num_isoforms):
+            # Log probabilities of these reads and
+            # this assignment of reads to isoforms
+            # Score assignment to current read
+            isoform_nums[0] = <DTYPE_t>curr_isoform
+            read_probs = log_score_reads(reads,
+                                         isoform_nums,
+                                         num_parts_per_isoform,
+                                         iso_lens,
+                                         read_len,
+                                         overhang_len,
+                                         num_reads)
+            reassignment_probs[curr_isoform] = read_probs
+            #asssignment_probs = log_score_assignment()
+            #reassignment_probs[curr_isoform] = \
+            #    read_probs + assignment_probs
+        # Normalize probabilities
+        reassignment_probs = my_logsumexp(reassignment_probs, num_isoforms)
+        # Sample new assignment for read
+        curr_read_assignment = 0#sample_multinomial(reassignment_probs, 1)
+        new_assignments[curr_read] = curr_read_assignment
+    return new_assignments
+
 
 
 ###

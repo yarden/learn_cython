@@ -16,7 +16,7 @@ num_com = 39874
 reads = [[1,0]] * num_inc + \
         [[0,1]] * num_exc + \
         [[1,1]] * num_com
-reads = np.array(reads)
+reads = np.array(reads, dtype=np.int)
 isoform_nums = []
 read_len = 40
 overhang_len = 4
@@ -42,6 +42,7 @@ def dirichlet_lnpdf(alpha, x):
 def profile_sample_reassignments():
     psi_vector = np.array([0.5, 0.5])
     test_array = np.array([1,2,3,4], dtype=np.float)
+    scaled_lens = iso_lens - read_len + 1
     print "Profiling numpy cumsum"
     t1 = time.time()
     for n in np.arange(num_calls):
@@ -61,11 +62,15 @@ def profile_sample_reassignments():
     print dirichlet_lnpdf(np.array([1, 1]), np.array([0.5, 0.5]))
     print scores.sample_from_multinomial(np.array([0.1, 0.3, 0.6]),
                                          100)
-    #scores.sample_reassignments(reads,
-    #                            psi_vector,
-    #                            scaled_lens,
-    #                            num_reads,
-    #                            num_isoforms)
+    result = scores.sample_reassignments(reads,
+                                         psi_vector,
+                                         iso_lens,
+                                         scaled_lens,
+                                         num_parts_per_isoform,
+                                         num_reads,
+                                         read_len,
+                                         overhang_len)
+    print "SCORES: ", result
     sys.exit(0)
 
 def profile_log_score_reads():

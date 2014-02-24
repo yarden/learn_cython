@@ -30,6 +30,7 @@ def main():
     cdef Rectangle *rec = new Rectangle(1, 2, 3, 4)
     try:
         recLength = rec.getLength()
+        print "recLength: ", recLength, type(recLength)
     finally:
         del rec     # delete heap allocated object
 

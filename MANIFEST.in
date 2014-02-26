@@ -1,0 +1,2 @@
+include mylapack/*.pyx
+include mylapack/*.c

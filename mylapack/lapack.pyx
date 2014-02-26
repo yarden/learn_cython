@@ -23,11 +23,14 @@ cdef extern from "f2c.h":
    ctypedef int integer
    ctypedef double doublereal
 
+#cdef extern from "clapack.h":
+#   pass
+
 
 # Import lapack functions.
 cdef extern from "clapack.h":
-   cdef extern from "f2c.h":
-       pass
+   #cdef extern from "f2c.h":
+   #    pass
    integer c_dgemm "dgemm_"(char *transa, char *transb, integer *m, integer *
                              n, integer *k, doublereal *alpha, doublereal *a, integer *lda,
                              doublereal *b, integer *ldb, doublereal *beta, doublereal *c__,
@@ -80,3 +83,4 @@ cdef int main():
     return 0
 
 main()
+

@@ -20,8 +20,6 @@ Step 3:
 $ python run.py
 importing mylapack
 <module 'mylapack' from 'mylapack/__init__.pyc'>
-Traceback (most recent call last):
-  File "run.py", line 5, in <module>
-    import mylapack.lapack
-ImportError: mylapack/lapack.so: undefined symbol: cdgemm
-
+LAPACK interface
+Calling dgemm
+** On entry to DGEMM , parameter number 10 had an illegal value

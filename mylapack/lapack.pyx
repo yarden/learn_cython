@@ -26,26 +26,22 @@ cdef extern from "f2c.h":
 #cdef extern from "clapack.h":
 #   pass
 
-
 # Import lapack functions.
 cdef extern from "clapack.h":
-   #cdef extern from "f2c.h":
-   #    pass
-   integer c_dgemm "dgemm_"(char *transa, char *transb, integer *m, integer *
-                             n, integer *k, doublereal *alpha, doublereal *a, integer *lda,
-                             doublereal *b, integer *ldb, doublereal *beta, doublereal *c__,
-                             integer *ldc)
+   integer f2c_dgemm(char *transa, char *transb, integer *m,
+                     integer *n, integer *k, doublereal *alpha,
+                     doublereal *a, integer *lda, doublereal *b,
+                     integer *ldb, doublereal *beta, doublereal *c__,
+                     integer *ldc)
 
 
 cdef int main():
-    # Form of matrix
     cdef char transa_val = 'N'
     cdef char *transa = &transa_val
 
     cdef char transb_val = 'N'
     cdef char *transb = &transb_val
 
-    # Number of rows of matrix A
     cdef int m = 3
     cdef int n = 3
     cdef int k = 3
@@ -65,20 +61,14 @@ cdef int main():
     cdef np.ndarray[double, ndim=2, mode="c"] c = \
       np.empty([3, 3], dtype=float)
 
+    cdef int lda = 3
+    cdef int ldb = 3
 
-    cdef int lda = m
-    cdef int ldb = n
+    cdef double beta = 0.0
 
-    cdef double beta = 1.0
-
-    cdef int ldc = 1
-
-    print "Multipling: "
-    print a
-    print " times "
-    print b
-
-    c_dgemm(transa, transb, &m, &n, &k, &alpha, &a[0,0], &lda, &b[0,0], &ldb, &beta, &c[0,0], &ldc)
+    cdef int ldc = 0
+ 
+    f2c_dgemm(&transa_val, &transb_val, &m, &n, &k, &alpha, &a[0,0], &lda, &b[0,0], &ldb, &beta, &c[0,0], &ldc)    
 
     return 0
 

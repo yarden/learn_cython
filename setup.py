@@ -34,6 +34,8 @@ include_dirs = [os.path.join(CURRENT_DIR, "include")]
 # Lapack functions extension
 # Source files
 c_source_dir = os.path.join(CURRENT_DIR, "src")
+cpp_source_dir = os.path.join(CURRENT_DIR, "cpp", "src")
+cpp_include_dirs = [os.path.join(CURRENT_DIR, "cpp", "include")]
 lapack_sources = \
   glob.glob(os.path.join(c_source_dir, "lapack", "*.c"))
 f2c_sources = \
@@ -43,11 +45,20 @@ blas_sources = \
 # Include numpy headers
 all_c_sources = \
   lapack_sources + blas_sources + f2c_sources
+cpp_sources = \
+  glob.glob(os.path.join(cpp_source_dir, "*.cpp"))
 
 lapack_ext = Extension("mylapack.lapack",
                        all_c_sources + ["mylapack/lapack.pyx"],
                        include_dirs=include_dirs)
-my_extensions = [lapack_ext]
+matrix_ext = Extension("mylapack.matrix_utils",
+                       cpp_sources + ["mylapack/matrix_utils.pyx"],
+                       language="c++",
+                       include_dirs=cpp_include_dirs)
+
+#my_extensions = [lapack_ext,
+#                 matrix_ext]
+my_extensions = [matrix_ext]
 
 ##
 ## Handle creation of source distribution. Here we definitely
@@ -78,9 +89,14 @@ extensions = []
 def no_cythonize(extensions, **_ignore):
     new_extensions = []
     for extension in extensions:
+        curr_lang = extension.language
+        if curr_lang is None:
+            curr_lang = "c"
+        curr_lang = "c++"
         ext_copy = \
           Extension(extension.name,
                     extension.sources,
+                    language=curr_lang,
                     include_dirs=extension.include_dirs,
                     library_dirs=extension.library_dirs)
         sources = []
@@ -95,6 +111,7 @@ def no_cythonize(extensions, **_ignore):
                 new_sfile = path + ext
             sources.append(new_sfile)
         ext_copy.sources[:] = sources
+        print "BUILDING %s" %(ext_copy.language)
         new_extensions.append(ext_copy)
     return new_extensions
 
@@ -123,7 +140,7 @@ if USE_CYTHON:
     cmdclass.update({'build_ext': build_ext})
 else:
     extensions = no_cythonize(my_extensions)
-    from distutils.command import build_ext
+#    from distutils.command import build_ext
     print "Not using Cython."
 
 

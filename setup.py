@@ -56,9 +56,8 @@ matrix_ext = Extension("mylapack.matrix_utils",
                        language="c++",
                        include_dirs=cpp_include_dirs)
 
-#my_extensions = [lapack_ext,
-#                 matrix_ext]
-my_extensions = [matrix_ext]
+my_extensions = [lapack_ext,
+                 matrix_ext]
 
 ##
 ## Handle creation of source distribution. Here we definitely
